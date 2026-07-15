@@ -1,0 +1,11 @@
+# --- Ortak (CLI + GUI) ---
+ytmusicapi>=1.7.0
+yt-dlp>=2024.1.0
+requests>=2.31.0
+
+# --- CLI (app.py) için ---
+rich>=13.7.0
+
+# --- GUI (paraotify_gui.py) için ---
+PyQt6>=6.6.0
+PyQt6-Qt6>=6.6.0
