@@ -1,4 +1,4 @@
-# Paraotify
+# Paratifiy
 
 Reklamsız, kendi barındırdığın bir müzik çalar. Spotify çalma listelerini YouTube
 Music üzerinden bulup çalar. İki arayüzü var:
