@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+
+# Kullanıcıya özel veriler (herkesin kendi çalma listesi/simgeleri olur)
+playlists.json
+playlist_icons.json
+
+# PyInstaller derleme çıktıları
+build/
+dist/
+*.spec
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

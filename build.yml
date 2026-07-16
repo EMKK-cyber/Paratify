@@ -1,0 +1,204 @@
+name: Paraotify Derlemeleri (Windows / macOS / Linux)
+
+# Bu workflow, GitHub'ın kendi sunucularında (senin bilgisayarında değil!)
+# Windows, macOS ve Linux için hazır, çift tıkla çalışan uygulama dosyaları üretir.
+#
+# Ne zaman çalışır:
+#   - "v1.0.0" gibi bir etiket (tag) push edildiğinde  -> derler + GitHub Release'e ekler
+#   - Actions sekmesinden elle "Run workflow" ile tetiklendiğinde -> sadece derler (artifact olarak)
+#
+# Yeni bir sürüm yayınlamak için:
+#   git tag v1.0.0
+#   git push origin v1.0.0
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  # ----------------------------------------------------------------
+  # WINDOWS (.exe)
+  # ----------------------------------------------------------------
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Bağımlılıkları kur
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: GUI'yi derle (Paraotify.exe)
+        run: >
+          pyinstaller --noconfirm --clean --onefile --windowed
+          --name Paraotify
+          --collect-all ytmusicapi --collect-all yt_dlp
+          paraotify_gui.py
+
+      - name: CLI'yi derle (Paraotify-CLI.exe)
+        run: >
+          pyinstaller --noconfirm --clean --onefile --console
+          --name Paraotify-CLI
+          --collect-all ytmusicapi --collect-all yt_dlp
+          app.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Paraotify-Windows
+          path: |
+            dist/Paraotify.exe
+            dist/Paraotify-CLI.exe
+
+  # ----------------------------------------------------------------
+  # macOS (.app -> .zip)
+  # ----------------------------------------------------------------
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Bağımlılıkları kur
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: GUI'yi derle (Paraotify.app)
+        run: >
+          pyinstaller --noconfirm --clean --windowed
+          --name Paraotify
+          --collect-all ytmusicapi --collect-all yt_dlp
+          paraotify_gui.py
+
+      - name: CLI'yi derle (Paraotify-CLI)
+        run: >
+          pyinstaller --noconfirm --clean --onefile --console
+          --name Paraotify-CLI
+          --collect-all ytmusicapi --collect-all yt_dlp
+          app.py
+
+      - name: .app'i zip'le (imzasız dağıtım için)
+        run: |
+          cd dist
+          ditto -c -k --sequesterRsrc --keepParent Paraotify.app Paraotify-macOS.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Paraotify-macOS
+          path: |
+            dist/Paraotify-macOS.zip
+            dist/Paraotify-CLI
+
+  # ----------------------------------------------------------------
+  # LINUX (AppImage)
+  # ----------------------------------------------------------------
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Sistem bağımlılıklarını kur (Qt için)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxcb-cursor0 libxkbcommon-x11-0 mpv fuse libfuse2
+
+      - name: Python bağımlılıklarını kur
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: GUI'yi derle (tek dosya binary)
+        run: >
+          pyinstaller --noconfirm --clean --onefile --windowed
+          --name paraotify
+          --collect-all ytmusicapi --collect-all yt_dlp
+          paraotify_gui.py
+
+      - name: CLI'yi derle (tek dosya binary)
+        run: >
+          pyinstaller --noconfirm --clean --onefile --console
+          --name paraotify-cli
+          --collect-all ytmusicapi --collect-all yt_dlp
+          app.py
+
+      - name: AppImage için AppDir hazırla
+        run: |
+          mkdir -p AppDir/usr/bin
+          cp dist/paraotify AppDir/usr/bin/paraotify
+          cp dist/paraotify-cli AppDir/usr/bin/paraotify-cli
+          cat > AppDir/paraotify.desktop << 'EOF'
+          [Desktop Entry]
+          Name=Paraotify
+          Exec=paraotify
+          Icon=paraotify
+          Type=Application
+          Categories=AudioVideo;Music;
+          EOF
+          python3 -c "
+          from PIL import Image, ImageDraw
+          img = Image.new('RGBA', (256, 256), (18, 18, 18, 255))
+          d = ImageDraw.Draw(img)
+          d.ellipse((28, 28, 228, 228), fill=(29, 185, 84, 255))
+          d.text((85, 110), 'P', fill=(0, 0, 0, 255))
+          img.save('AppDir/paraotify.png')
+          " || true
+          if [ ! -f AppDir/paraotify.png ]; then
+            pip install pillow
+            python3 -c "
+          from PIL import Image, ImageDraw
+          img = Image.new('RGBA', (256, 256), (18, 18, 18, 255))
+          d = ImageDraw.Draw(img)
+          d.ellipse((28, 28, 228, 228), fill=(29, 185, 84, 255))
+          img.save('AppDir/paraotify.png')
+          "
+          fi
+
+      - name: appimagetool'u indir ve AppImage üret
+        run: |
+          wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool-x86_64.AppImage
+          ./appimagetool-x86_64.AppImage --appimage-extract-and-run AppDir Paraotify-x86_64.AppImage
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Paraotify-Linux
+          path: |
+            Paraotify-x86_64.AppImage
+            dist/paraotify-cli
+
+  # ----------------------------------------------------------------
+  # Sadece "v*.*.*" etiketiyle tetiklendiyse: GitHub Release oluştur
+  # ----------------------------------------------------------------
+  release:
+    needs: [build-windows, build-macos, build-linux]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Release oluştur ve dosyaları ekle
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/Paraotify-Windows/*
+            artifacts/Paraotify-macOS/*
+            artifacts/Paraotify-Linux/*

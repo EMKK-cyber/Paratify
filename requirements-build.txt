@@ -1,0 +1,7 @@
+# Bu dosya SADECE .exe / .app / AppImage gibi hazır dosyalar üretmek
+# (paketlemek) isteyenler içindir. Uygulamayı normal çalıştırmak için
+# gerekli değildir — o durumda sadece requirements.txt yeterlidir.
+
+-r requirements.txt
+pyinstaller>=6.3.0
+pillow>=10.0.0
