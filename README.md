@@ -1,4 +1,4 @@
-# Paraotify
+# Paratify
 
 Reklamsız, kendi barındırdığın bir müzik çalar. Spotify çalma listelerini YouTube
 Music üzerinden bulup çalar. İki arayüzü var:
@@ -47,7 +47,7 @@ işletim sistemine uygun hazır dosyayı indir:
 macOS ve Linux'ta aynıdır:
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/EMKK-cyber/Paratify/
 cd paraotify
 
 python3 -m venv venv          # Windows'ta: python -m venv venv
